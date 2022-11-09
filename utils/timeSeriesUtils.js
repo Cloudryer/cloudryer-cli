@@ -1,10 +1,5 @@
-const convertToObject = (timeseriesVector) => {
-  const timeSeriesDataObject = {};
-  timeseriesVector.forEach((datapoint) => {
-    timeSeriesDataObject[datapoint[0]] = datapoint[1];
-  });
-  return timeSeriesDataObject;
-}
+const TimeSeries = require('../models/timeSeries');
+
 
 const union = (arrays) => {
   let set = new Set();
@@ -15,36 +10,51 @@ const union = (arrays) => {
   });
   return Array.from(set);
 }
-/**
- *
- * @param timeSeries   {timeSeriesName1:[[timestamp1,value1],[timestamp2,value2]], timeSeriesName2:[[timestamp1,value1],[timestamp2,value2]]}
- * @param operator     callback that takes an object of per timeseries key value pairs and returns a single value
- * @returns [[timestamp1,value1],[timestamp2,value2]]  calculated per-time values sorted by timestamp
- */
-const timeSeriesScalarOperation = function (timeSeries, operator) { // metrics {cpu:[[ts,measurement]],disk,...}
 
-  let res = [];
+/**
+ * Scalar opearation on a vector of time series
+ * @param timeSeriesVectorsArray
+ * @param operator
+ * @returns {TimeSeries}
+ */
+const multiTimeSeriesScalarOperation = function (timeSeriesVectorsArray, operator) {
+  let res = new TimeSeries('', [], []);
   let aggregatedDataPoints = {}
 
-  //{cpu : { ts1: measurment},...}
-  Object.keys(timeSeries).forEach((key) => {
-    aggregatedDataPoints[key] = convertToObject(timeSeries[key]);
+  timeSeriesVectorsArray.forEach((timeSeriesVector) => {
+    aggregatedDataPoints[timeSeriesVector.getName()] = timeSeriesVector.getTimeStampsValuesObject();
   });
 
-
-  let sortedTimestampsUnion = union(Object.values(aggregatedDataPoints).map((datapoints) => Object.keys(datapoints))).sort(); // sorted array of timestamps
+  let sortedTimestampsUnion = union(timeSeriesVectorsArray.map((timeseries) =>
+    timeseries.getTimestamps())).map(t => new Date(t)).sort((a, b) => b - a).map(date => date.toISOString()); // sorted array of timestamps
 
   sortedTimestampsUnion.forEach((ts) => {
     const payload = {};
     Object.keys(aggregatedDataPoints).forEach((key) => {
       payload[key] = aggregatedDataPoints[key][ts];
     });
-    res.push([ts, operator(payload)]);
+    res.addValue(operator(payload), new Date(ts));
   });
   return res;
-
 }
 
+/**
+ * Scalar sum of two time series with the same timestamps
+ * @param timeSeries1
+ * @param timeSeries2
+ * @param newTimeSeriesName
+ * @returns {TimeSeries}
+ */
+const sumTwoTimeSeries = function (timeSeries1, timeSeries2, newTimeSeriesName) {
+  // console.assert(timeSeries1.getTimestamps().length === timeSeries2.getTimestamps().length);
+  // console.assert(timeSeries1.getTimestamps().every((timestamp, index) => timestamp === timeSeries2.getTimestamps()[index]));
+
+  const sumValues = timeSeries1.getValues().map((value, index) => value + timeSeries2.getValues()[index]);
+  return new TimeSeries(newTimeSeriesName, sumValues, timeSeries1.getTimestamps());
+}
+
+
 module.exports = {
-  timeSeriesScalarOperation
+  multiTimeSeriesScalarOperation,
+  sumTwoTimeSeries
 }

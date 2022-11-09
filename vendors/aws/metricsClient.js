@@ -1,7 +1,8 @@
 const {CloudWatchClient, GetMetricDataCommand} = require("@aws-sdk/client-cloudwatch");
-const {Metrics} = require('../../machines/metadata')
+const {Metrics} = require('../../models/metadata');
+const TimeSeries = require('../../models/timeSeries');
 
-const METRIC_PERIOD_SEC = 300;
+const METRIC_PERIOD_SEC = 3600;
 
 const MetricsLabelsMappping = {
   "CPUUtilization": Metrics.CPU,
@@ -31,11 +32,19 @@ const createMetricPayload = function (instanceId, metricName) {
     },
     ReturnData: true
   }
-}
+};
 
-const getInstancesMetrics = async function ({perRegionInstances,startDate, endDate}) {
+
+/**
+ * Returns a map of instanceId and their respective metrics as TimeSeries objects
+ * @param perRegionInstances
+ * @param startDate
+ * @param endDate
+ * @returns {Promise<{}>}
+ */
+const getInstancesMetrics = async function ({perRegionInstances, startDate, endDate}) {
   const instancesMetrics = {};
-  for(let region of Object.keys(perRegionInstances)) {
+  for (let region of Object.keys(perRegionInstances)) {
     const client = new CloudWatchClient({region: region});
     const params = {
       StartTime: startDate,
@@ -54,20 +63,26 @@ const getInstancesMetrics = async function ({perRegionInstances,startDate, endDa
 
 
     const data = await client.send(new GetMetricDataCommand(params));
-    //console.log(data);
 
     data.MetricDataResults.forEach((metricDataResult) => {
-      const instanceId = metricDataResult.Id.split('_')[0];
+      let idParts=metricDataResult.Id.split('_');
+      const instanceId = `i-${idParts[1]}`;
       if (!instancesMetrics[instanceId]) {
         instancesMetrics[instanceId] = {};
       }
       const metricName = MetricsLabelsMappping[metricDataResult.Label];
-      instancesMetrics[instanceId][metricName] = {timestamps:metricDataResult.Timestamps, values:metricDataResult.Values};
-  });
+      const timestamps = metricDataResult.Timestamps.map((timestamp) => new Date(timestamp));
+      let values = metricDataResult.Values;
+      if(metricName === Metrics.UpTime){
+        values = values.map((value) => value === 0 ? 1 : 0);
+      }
+      instancesMetrics[instanceId][metricName] = new TimeSeries(metricName, values, timestamps);
+    });
+  }
 
   return instancesMetrics;
-}
+};
 
 module.exports = {
   getInstancesMetrics
-}
+};

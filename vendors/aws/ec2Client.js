@@ -1,7 +1,18 @@
+const {Machine, States, Resource, OperatingSystems} = require('../../models/metadata');
 const {
   EC2Client,
   DescribeInstancesCommand,
 } = require("@aws-sdk/client-ec2");
+
+const STATES_MAPPING = {
+  "pending": States.Pending,
+  "running": States.Running,
+  "shutting-down": States.ShuttingDown,
+  "terminated": States.Terminated,
+  "stopping": States.Stopping,
+  "stopped": States.Stopped,
+};
+
 
 /**
  * Return a list of all instances in a list of regions
@@ -17,8 +28,10 @@ const getEc2Instances = async function (regions) {
       let fetchNextBatch = true;
       let nextToken = null;
       while (fetchNextBatch) {
-        const data = await ec2Client.send(new DescribeInstancesCommand({Filters: [{Name: 'instance-state-name', Values: ['terminated']}]}));
-        if(data.NextToken) {
+        const data = await ec2Client.send(new DescribeInstancesCommand({
+          NextToken: nextToken
+        }));
+        if (data.NextToken) {
           nextToken = data.NextToken;
         } else {
           fetchNextBatch = false;
@@ -27,21 +40,24 @@ const getEc2Instances = async function (regions) {
         data.Reservations.forEach((reservation) => {
           reservation.Instances.forEach((instance) => {
             const machineData = {
-              region,
-              instanceId: instance.InstanceId,
-              instanceType: instance.InstanceType,
-              state: instance.State.Name,
-              launchTime: instance.LaunchTime,
-              imageId: instance.ImageId,
-              tags: instance.Tags,
-              architecture: instance.Architecture,
-              licenses: instance.Licenses,
-              platform: instance.Platform,
-              platformDetails: instance.PlatformDetails,
-              description: instance.Description,
-              stateReason: instance.StateReason,
-              stateTransitionReason: instance.StateTransitionReason,
-              usageOperationUpdateTime: instance.UsageOperationUpdateTime
+              [Resource.Region]: region,
+              [Machine.InstanceID]: instance.InstanceId,
+              [Machine.InstanceType]: instance.InstanceType,
+              [Machine.State]: STATES_MAPPING[instance.State.Name],
+              [Resource.CreationDate]: new Date(instance.UsageOperationUpdateTime),
+              [Machine.OperatingSystem]: !instance.Platform ? OperatingSystems.Linux : OperatingSystems.Windows,
+              awsInfo: {
+                launchTime: instance.LaunchTime,
+                imageId: instance.ImageId,
+                tags: instance.Tags,
+                architecture: instance.Architecture,
+                licenses: instance.Licenses,
+                platformDetails: instance.PlatformDetails,
+                description: instance.Description,
+                stateReason: instance.StateReason,
+                stateTransitionReason: instance.StateTransitionReason,
+                usageOperationUpdateTime: instance.UsageOperationUpdateTime
+              }
             }
             let firstTimeNetworkInterfacedAttached = Number.MAX_VALUE;
             const {NetworkInterfaces} = instance;

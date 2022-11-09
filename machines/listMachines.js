@@ -1,25 +1,29 @@
 const {printMachines, printSummary} = require('./printMachines');
-const {getEc2Instances} = require('../vendors/aws/ec2Client');
-const {getAverageResourcesCostPerHour} = require('../vendors/aws/costClient');
-const {getInstancesMetrics} = require('../vendors/aws/metricsClient');
-const {lookUpInstancesEvents} = require('../vendors/aws/cloudTrailClient');
+const ec2Client = require('../vendors/aws/ec2Client');
+const metricsClient = require('../vendors/aws/metricsClient');
+const cloudTrailClient = require('../vendors/aws/cloudTrailClient');
 const {getAwsRegionCodes} = require('../vendors/aws/utils');
-const {timeSeriesScalarOperation} = require('../utils/timeSeriesUtils');
-const {Machine, States, Waste, Metrics, Cost} = require('./metadata');
+const {multiTimeSeriesScalarOperation, sumTwoTimeSeries} = require('../utils/timeSeriesUtils');
+const {Machine, Waste, Metrics, Cost, Resource} = require('../models/metadata');
+const {getInstanceCostPerHour} = require('../vendors/aws/pricingCatalog');
 
 const MILLIS_PER_DAY = 24 * 60 * 60 * 1000;
 
+const utilizationThresholds = {
+  [Metrics.CPU]: 10,
+  [Metrics.DiskReadWriteOps]: 100,
+  [Metrics.NetworkPacketsInOut]: 2000
+}
 /**
  * Print the list of machines and returns a list of machines with their utilization and waste
- *
  * @param hideUtilization
  * @param calculateWaste
  * @param evaluationPeriod
- * @returns {Promise<void>}
+ * @returns {Promise<(*&{"[Resource.CreationDate]": *, "[Resource.Creator]": (*|string), "[Waste.EvalPeriod]"})[]>}
  */
 const listMachines = async function ({hideUtilization, calculateWaste, evaluationPeriod}) {
 
-  let enrichedMachinesData = await fetchAndEnrichMachineData({
+  const enrichedMachinesData = await fetchAndEnrichMachineData({
     fetchUtilization: !hideUtilization,
     calculateWaste,
     evalPeriodDays: evaluationPeriod
@@ -28,167 +32,167 @@ const listMachines = async function ({hideUtilization, calculateWaste, evaluatio
   if (calculateWaste) {
     printSummary(enrichedMachinesData, {hideUtilization, calculateWaste, evaluationPeriod});
   }
+  // console.log(JSON.stringify(enrichedMachinesData, null, 2));
   return enrichedMachinesData;
 };
 
 
 /**
- * Calculate a utilization metric based on the cpu, disk and network metrics
- * @param instancesMetrics  {cpu: [values], disk: [values], network: [values], timestamps: [timestamps]}
- * @returns [[timestamp, utilization]]
+ * Calculate a utilization time series for given instance's cpu,disk and network metrics
+ * @param metrics - array of cpu,disk and network time series
+ * @returns {TimeSeries} - utilization time series
  */
 function calculateUtilization(metrics) {
-  const timeSeries = {};
 
-  //TODO: normalize the metrics to the same scale
-
-  Object.keys(metrics).forEach(metricKey => {
-    timeSeries[metricKey] = metrics[metricKey].values.map((value, index) => [metrics[metricKey].timestamps[index], value]);
+  const utilizationTimeSeries = multiTimeSeriesScalarOperation(metrics, (perTimestampValues) => {
+    //TODO: interface is not clear. it's not clear which metric is used for the timestamps
+    let networkActivity = perTimestampValues[Metrics.NetworkPacketsInOut] > utilizationThresholds[Metrics.NetworkPacketsInOut];
+    let diskActivity = perTimestampValues[Metrics.DiskReadWriteOps] > utilizationThresholds[Metrics.DiskReadWriteOps];
+    let cpuActivity = perTimestampValues[Metrics.CPU] > utilizationThresholds[Metrics.CPU];
+    return ((networkActivity || diskActivity) && cpuActivity) ? 1 : 0;
   });
-
-  return timeSeriesScalarOperation(timeSeries, (perTimestampValues) => {
-
-    return (perTimestampValues[Metrics.CPU] + perTimestampValues[Metrics.DiskReadWriteOps] + perTimestampValues[Metrics.NetworkPacketsInOut]) / 3;
-  });
+  utilizationTimeSeries.setName(Metrics.Utilization);
+  return utilizationTimeSeries;
 }
 
-/**
- * Fetch machines data and enrich it with utilazation information and pricing data
- * @param fetchUtilization
- * @param calculateWaste
- * @param evalPeriod
- * @returns {Promise<[{
-                        instanceId,
-                        state,
-                        machineType,
-                        cpuPct,
-                        diskIOsec,
-                        networkMBsec,
-                        wastePerPeriod,
-                        timePctNotUtilized,
-                        evalPeriod
-                     }]>}
- */
-
-
-// const listMachines = async function ({hideUtilization, calculateWaste, evaluationPeriod}) {
-//
-//   let perInstanceStatesTimeSeries ; //fetch from cloudtrail using evaluation period
-//   let instncesMetrics ; //fetch from cloudwatch using evaluation period
-//   let instancesCostPerHour ; //fetch from cost explorer api using evaluation period
-//   let instancesUtilization ; //calculate from instancesMetrics
-//
-//   // esitmate perhour cost if missing
-//   // estimate states if missing
-//
-//
-//   let runningWastePerInstancePerHour = calculateRunningWaste(instancesUtilization,instancesCostPerHour);
-//   let stoppedWastePerInstancePerHour = calculateStoppedWaste(perInstanceStatesTimeSeries,instancesCostPerHour);
-//
-//
-// }
-
-
-const fetchAndEnrichMachineData = async function ({fetchUtilization, calculateWaste, evalPeriodDays}) {
-
-
-  let instancesAverageCostPerHour = await getAverageResourcesCostPerHour();
-
-  let instances = await getEc2Instances(getAwsRegionCodes()); // [{instanceId, type,startTime,endTime, other static properties}]
+async function getInstances() {
+  let instances = await ec2Client.getEc2Instances(getAwsRegionCodes()); // [{instanceId, type,startTime,endTime, other static properties}]
   const perRegionInstances = {};
   instances.forEach(instance => {
-    if (!perRegionInstances[instance.region]) {
-      perRegionInstances[instance.region] = [];
+    if (!perRegionInstances[instance[Resource.Region]]) {
+      perRegionInstances[instance[Resource.Region]] = [];
     }
-    perRegionInstances[instance.region].push(instance.instanceId);
+    perRegionInstances[instance[Resource.Region]].push(instance[Machine.InstanceID]);
   });
+  return {instances, perRegionInstances};
+}
 
-  const instancesEvents = await lookUpInstancesEvents(getAwsRegionCodes()); // {instanceId:[{event1},{event2}]}
 
-  const instancesUpTime = {}; // {instanceId:[{startTime,endTime}]}
+async function fetchAndAnalyzeInstancesEvents() {
+  const instancesEvents = await cloudTrailClient.lookUpInstancesEvents(getAwsRegionCodes()); // {instanceId:[{event1},{event2}]}
+
+  const instancesRunningTimes = {}; // {instanceId:[{startTime,endTime}]}
   const instancesCreator = {}; // {instanceId:user}
   const instanceStateStats = {}; // {instanceId:{'runningHr':number,'stoppedHr':number,'lifetimeHr':number}}
   Object.keys(instancesEvents).forEach(instanceId => {
     let events = instancesEvents[instanceId];
     instancesCreator[instanceId] = null;
-    instancesUpTime[instanceId] = [];
+    instancesRunningTimes[instanceId] = [];
     instanceStateStats[instanceId] = {};
     events.sort((event1, event2) => {
       return event1.date - event2.date;
     }).forEach(event => {
       if (event.name === 'RunInstances') {
         instancesCreator[instanceId] = event.username;
-        instancesUpTime[instanceId].push({startTime: event.date});
+        instancesRunningTimes[instanceId].push({startTime: event.date});
       } else if (event.name === 'StartInstances') {
-        instancesUpTime[instanceId].push({startTime: event.date});
+        instancesRunningTimes[instanceId].push({startTime: event.date});
       } else if (event.name === 'TerminateInstances' || event.name === 'StopInstances') {
-        if (instancesUpTime[instanceId].length - 1 >= 0) {
-          instancesUpTime[instanceId][instancesUpTime[instanceId].length - 1].endTime = event.date;
+        if (instancesRunningTimes[instanceId].length - 1 >= 0) {
+          instancesRunningTimes[instanceId][instancesRunningTimes[instanceId].length - 1].endTime = event.date;
         } else {
-          instancesUpTime[instanceId].push({endTime: event.date});
+          instancesRunningTimes[instanceId].push({endTime: event.date});
         }
 
       }
     });
   });
-  console.log(instancesUpTime);
-  console.log(instancesCreator);
+  return instancesCreator;
+}
 
-  const latestMetricsValuesPerInstance = {};
-  const instancesUtilization = {}; // {instanceId:[{timestamp,utilization}]}
+async function fetchMetricsAndAnalyzeUtilization(evalPeriodDays, fetchUtilization, perRegionInstances) {
+  const instancesUtilization = {};
   let currentDate = new Date();
-  let dateMinusEvalPeriod = new Date(currentDate.getTime() - evalPeriodDays * MILLIS_PER_DAY);
+  let endDate = new Date(currentDate);
+  endDate.setMinutes(0);
+  endDate.setSeconds(0);
+  endDate.setMilliseconds(0);
+
+  let dateMinusEvalPeriod = new Date(endDate - evalPeriodDays * MILLIS_PER_DAY);
+  let perInstanceMetrics;
   if (fetchUtilization) {
-    const perInstanceMetrics = await getInstancesMetrics({ // {instanceId:[{metric1},{metric2}]}
+    perInstanceMetrics = await metricsClient.getInstancesMetrics({ // {instanceId:[{metric1},{metric2}]}
       perRegionInstances,
       startDate: dateMinusEvalPeriod,
-      endDate: currentDate
+      endDate: endDate
     });
-
 
     Object.keys(perInstanceMetrics).forEach((instanceId) => {
       const metrics = perInstanceMetrics[instanceId];
-
-      latestMetricsValuesPerInstance[instanceId] = {
-        [Metrics.CPU]: metrics[Metrics.CPU].values[metrics[Metrics.CPU].length - 1],
-        [Metrics.DiskReadWriteOps]: metrics[Metrics.DiskReadOps].values[metrics[Metrics.DiskReadWriteOps].length - 1],
-        network: networkValues[networkValues.length - 1],
-      };
-      instancesUtilization[instanceId] = calculateUtilization();
+      metrics[Metrics.DiskReadWriteOps] = sumTwoTimeSeries(metrics[Metrics.DiskReadOps], metrics[Metrics.DiskWriteOps], Metrics.DiskReadWriteOps);
+      metrics[Metrics.NetworkPacketsInOut] = sumTwoTimeSeries(metrics[Metrics.NetworkPacketsIn], metrics[Metrics.NetworkPacketsOut], Metrics.NetworkPacketsInOut);
+      instancesUtilization[instanceId] = calculateUtilization([metrics[Metrics.CPU], metrics[Metrics.DiskReadWriteOps], metrics[Metrics.NetworkPacketsInOut]]);
     });
   }
+  return {perInstanceMetrics, instancesUtilization};
+}
 
+/*
+we should probably remove this function
+function calculateWastePerInstance(instancesUtilization) {
+  const wastePerInstance = {};
+  Object.keys(instancesUtilization).forEach(instanceId => {
+    const utilization = instancesUtilization[instanceId];
+    const averageCostPerHour = instancesAverageCostPerHour[instanceId];
+    const wasteTimeseries = multiTimeSeriesScalarOperation([utilization, averageCostPerHour], (perTimestampValues) => {
+      if (perTimestampValues[utilization.getName()] && perTimestampValues[averageCostPerHour.getName()]) {
+        if (perTimestampValues[utilization.getName()] === 0) {
+          return perTimestampValues[averageCostPerHour.getName()];
+        }
+      }
+      return 0;
+    });
+    wasteTimeseries.setName(`${instanceId}_waste`);
+    wastePerInstance[instanceId] = wasteTimeseries;
+  });
+  return wastePerInstance;
+}*/
 
-  // let machinesIdleTimePerPeriod = calculateIdleTime(machinesMetrics,evalPeriod); //{instanceId : {timeInHrs,pct}}
+async function fetchAndEnrichMachineData({fetchUtilization, calculateWaste, evalPeriodDays}) {
 
-  // let machinesTotalIdleTime = calculateIdleTime(machinesMetrics,-1); //{instanceId : {timeInHrs,pct}}
+  // let instancesAverageCostPerHour = await costClient.getAverageResourcesCostPerHour(evalPeriodDays);
+  let {instances, perRegionInstances} = await getInstances();
 
-  // let machinesWastePerPeriod = calulateWaste (pricingData,machinesIdleTimePerPeriodPct) // {instanceId : {amount,pct}}
+  const instancesCreator = await fetchAndAnalyzeInstancesEvents();
 
-  // let machinesTotalWastePerPeriod = calulateWaste (pricingData,machinesTotalIdleTimePct) //{instanceId : {amount,pct}}
+  const {
+    perInstanceMetrics,
+    instancesUtilization
+  } = await fetchMetricsAndAnalyzeUtilization(evalPeriodDays, fetchUtilization, perRegionInstances);
 
+  // const perInstanceWaste = calculateWastePerInstance(instancesUtilization);
 
   // let data = require('../testData/fakedMachineData')({fetchUtilization, calculateWaste, evalPeriod});
   // return data;
-  let enrichedInstances = instances.map(instance => {
-    return {
-      [Machine.InstanceID]: instance.instanceId,
-      [Machine.State]: instance.state,
-      [Machine.MachineType]: instance.type,
-      [Machine.CreationDate]: instance.startTime,
-      [Machine.Creator]: instancesCreator[instance.instanceId] ? instancesCreator[instance.instanceId] : 'unknown',
-      [Machine.UpTime]: instancesUpTime[instance.instanceId],
-      [Metrics.CPU]: latestMetricsValuesPerInstance[instance.instanceId] ? latestMetricsValuesPerInstance[instance.instanceId].cpu : [],
-      [Metrics.Disk]: latestMetricsValuesPerInstance[instance.instanceId] ? latestMetricsValuesPerInstance[instance.instanceId].disk : [],
-      [Metrics.Network]: latestMetricsValuesPerInstance[instance.instanceId] ? latestMetricsValuesPerInstance[instance.instanceId].network : [],
-      [Waste.TotalWaste]: 0,
-      [Waste.IdlePct]: 0,
-      [Cost.TotalCost]: 0,
-
+  return instances.map(instance => {
+    let instanceId = instance[Machine.InstanceID];
+    let enrichedInstance = {
+      ...instance,
+      [Waste.EvalPeriod]: evalPeriodDays,
+      [Resource.CreationDate]: instance.startTime,
+      [Resource.Creator]: instancesCreator[instance.instanceId] ? instancesCreator[instance.instanceId] : 'unknown',
     }
+    if (fetchUtilization) {
+      enrichedInstance[Metrics.CPU] = perInstanceMetrics[instanceId][Metrics.CPU].getLatestValue();
+      enrichedInstance[Metrics.DiskReadWriteOps] = perInstanceMetrics[instanceId][Metrics.DiskReadWriteOps].getLatestValue();
+      enrichedInstance[Metrics.NetworkPacketsInOut] = perInstanceMetrics[instanceId][Metrics.NetworkPacketsInOut].getLatestValue();
+      let totalUpTime = perInstanceMetrics[instanceId][Metrics.UpTime].getSum();
+      let totalUtilizedTime = instancesUtilization[instanceId].getSum();
+      enrichedInstance[Metrics.UpTime] = totalUpTime;
+      let costPerHour = getInstanceCostPerHour({
+        region: instance[Resource.Region],
+        instanceType: instance[Machine.InstanceType],
+        operatingSystem: instance[Machine.OperatingSystem],
+      });
+      enrichedInstance[Cost.TotalCost] = totalUpTime * costPerHour;
+      if (calculateWaste) {
+        enrichedInstance[Waste.TotalWaste] = (totalUpTime - totalUtilizedTime) * costPerHour;
+        enrichedInstance[Waste.IdlePct] = Math.floor((1 - totalUtilizedTime / totalUpTime) * 10000) / 100 + '%';
+      }
+    }
+    enrichedInstance[Resource.CreationDate] = new Date(instance[Resource.CreationDate]);
+    return enrichedInstance;
   });
-
-  return enrichedInstances;
 
 }
 

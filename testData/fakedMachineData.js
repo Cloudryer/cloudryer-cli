@@ -1,4 +1,4 @@
-const {States,Metrics,Waste,Machine} = require('../machines/metadata');
+const {States,Metrics,Waste,Machine} = require('../models/metadata');
 
 const genRanInstanceId = function () {
   const randomHexString = [...Array(17)].map(() => Math.floor(Math.random() * 16).toString(16)).join('');
@@ -20,7 +20,7 @@ const generateFakedData = function ({fetchUtilization, calculateWaste, evalPerio
       cpuPct = 0;
       diskIOsec = 0;
       networkMBsec = 0;
-      if (state == States.Running) {
+      if (state === States.Running) {
         cpuPct = Math.floor(Math.random() * 100);
         diskIOsec = Math.floor(Math.random() * 100);
         networkMBsec = Math.floor(Math.random() * 100);
