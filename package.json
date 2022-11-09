@@ -1,0 +1,32 @@
+{
+  "name": "cloudryer-cli",
+  "version": "1.0.0",
+  "description": "Cloudryer CLI",
+  "main": "bin/index.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "author": "Ziv Salzman <ziv@cloudryer.com>",
+  "license": "Apache-2.0",
+  "bin": {
+    "cloudryer": "./bin/index.js"
+  },
+  "dependencies": {
+    "@aws-sdk/client-cloudtrail": "^3.199.0",
+    "@aws-sdk/client-cloudwatch": "^3.198.0",
+    "@aws-sdk/client-cost-explorer": "^3.198.0",
+    "@aws-sdk/client-ec2": "^3.193.0",
+    "@aws-sdk/client-pricing": "^3.188.0",
+    "chalk": "4.1.2",
+    "commander": "^9.4.1",
+    "console-table-printer": "^2.11.1",
+    "node-emoji": "^1.11.0",
+    "yargs": "^17.6.0"
+  },
+  "devDependencies": {
+    "eslint": "^8.25.0",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-plugin-import": "^2.26.0",
+    "jest": "^29.2.2"
+  }
+}
