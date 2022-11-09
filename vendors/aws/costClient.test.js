@@ -107,10 +107,10 @@ describe('getAverageResourcesCostPerHour', () => {
   test('it should return a cost per hour timeseries data for each of the resources', async () => {
     const evalationPeriodDays = 7;
 
-    let result = await getAverageResourcesCostPerHour( evalationPeriodDays);
+    let result = await getAverageResourcesCostPerHour(evalationPeriodDays);
     expect(result).toEqual({
-      'i-052b067f18ed43dc6': new TimeSeries(Cost.CostPerHour, [0.0116,0.0116],[new Date('2022-11-01T22:00:00Z'), new Date('2022-11-01T23:00:00Z')].reverse()),
-      'NoResourceId': new TimeSeries(Cost.CostPerHour, [0.0012469111,-0.0329692165,0.0397888],[new Date('2022-11-01T21:00:00Z'),new Date('2022-11-01T22:00:00Z'), new Date('2022-11-01T23:00:00Z')].reverse())
+      'i-052b067f18ed43dc6': new TimeSeries(Cost.CostPerHour, [0.0116, 0.0116], ["2022-11-01T23:00:00.000Z", "2022-11-01T22:00:00.000Z"]),
+      'NoResourceId': new TimeSeries(Cost.CostPerHour, [0.0012469111, -0.0329692165, 0.0397888], ["2022-11-01T23:00:00.000Z","2022-11-01T22:00:00.000Z", "2022-11-01T21:00:00.000Z"])
     });
   });
 });

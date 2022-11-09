@@ -4,7 +4,7 @@
   "description": "Cloudryer CLI",
   "main": "bin/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest"
   },
   "author": "Ziv Salzman <ziv@cloudryer.com>",
   "license": "Apache-2.0",
