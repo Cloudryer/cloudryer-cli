@@ -1,14 +1,11 @@
 #! /usr/bin/env node
-
-
 const {Command} = require('commander');
 const program = new Command();
 
-
 program
-  .name('string-util')
-  .description('CLI to some JavaScript string utilities')
-  .version('0.8.0');
+  .name('Cloudryer')
+  .description('CLI to analyze AWS EC2 instances\' cost')
+  .version('1.0.0');
 
 program.command('list-machines')
   .description('List EC2 Machines')
