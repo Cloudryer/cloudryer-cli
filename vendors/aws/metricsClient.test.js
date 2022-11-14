@@ -13,7 +13,7 @@ const awsResponsePayload = {
   "MetricDataResults": [
     {
       "Id": "i_08b3f8f7dcc08d7e4_CPUUtilization",
-      "Label": "CPUUtilization",
+      "Label": "i_08b3f8f7dcc08d7e4 CPUUtilization",
       "Timestamps": [
         "2022-11-07T22:17:00.000Z",
         "2022-11-07T21:17:00.000Z",
@@ -32,7 +32,7 @@ const awsResponsePayload = {
     },
     {
       "Id": "i_08b3f8f7dcc08d7e4_MetadataNoToken",
-      "Label": "MetadataNoToken",
+      "Label": "i_08b3f8f7dcc08d7e4 MetadataNoToken",
       "Timestamps": [
         "2022-11-07T22:17:00.000Z",
         "2022-11-07T21:17:00.000Z",
@@ -51,7 +51,7 @@ const awsResponsePayload = {
     },
     {
       "Id": "i_08b3f8f7dcc08d7e4_NetworkPacketsIn",
-      "Label": "NetworkPacketsIn",
+      "Label": "i_08b3f8f7dcc08d7e4 NetworkPacketsIn",
       "Timestamps": [
         "2022-11-07T22:17:00.000Z",
         "2022-11-07T21:17:00.000Z",
@@ -70,7 +70,7 @@ const awsResponsePayload = {
     },
     {
       "Id": "i_08b3f8f7dcc08d7e4_NetworkPacketsOut",
-      "Label": "NetworkPacketsOut",
+      "Label": "i_08b3f8f7dcc08d7e4 NetworkPacketsOut",
       "Timestamps": [
         "2022-11-07T22:17:00.000Z",
         "2022-11-07T21:17:00.000Z",
@@ -89,7 +89,7 @@ const awsResponsePayload = {
     },
     {
       "Id": "i_08b3f8f7dcc08d7e4_DiskReadOps",
-      "Label": "DiskReadOps",
+      "Label": "i_08b3f8f7dcc08d7e4 DiskReadOps",
       "Timestamps": [
         "2022-11-07T22:17:00.000Z",
         "2022-11-07T21:17:00.000Z",
@@ -108,7 +108,7 @@ const awsResponsePayload = {
     },
     {
       "Id": "i_08b3f8f7dcc08d7e4_DiskWriteOps",
-      "Label": "DiskWriteOps",
+      "Label": "i_08b3f8f7dcc08d7e4 DiskWriteOps",
       "Timestamps": [
         "2022-11-07T22:17:00.000Z",
         "2022-11-07T21:17:00.000Z",

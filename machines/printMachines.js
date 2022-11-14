@@ -13,6 +13,7 @@ const columnsDefinition = {
     {name: Machine.InstanceID, title: 'Instance ID', alignment: 'left'}, // column coloring
     {name: Machine.InstanceType, title: 'Instance Type', alignment: 'left', maxLen: 11},
     {name: Metrics.UpTime, title: 'Total Running Time (hrs)', alignment: 'left',maxLen: 13},
+    {name: Resource.Creator, title: 'Owner', alignment: 'left',maxLen: 13},
   ],
   utilizationColumns: [
     {name: Metrics.CPU, title: 'CPU', alignment: 'left'}, // column coloring
@@ -49,6 +50,7 @@ const printMachines = function (machinesData, {hideUtilization, calculateWaste, 
     let renderedMachine = {
       [Machine.InstanceType]: machine[Machine.InstanceType],
       [Resource.Region]: machine[Resource.Region],
+      [Resource.Creator]: machine[Resource.Creator],
 
     };
 

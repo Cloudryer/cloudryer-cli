@@ -17,11 +17,11 @@ const STATES_MAPPING = {
 /**
  * Return a list of all instances in a list of regions
  * @param regions
- * @returns {Promise<*[]>}
+ * @returns {Promise<{}>}
  */
 const getEc2Instances = async function (regions) {
 
-  let machinesData = [];
+  let machinesData = {};
   for (let region of regions) {
     try {
       const ec2Client = new EC2Client({region: region});
@@ -67,7 +67,7 @@ const getEc2Instances = async function (regions) {
               firstTimeNetworkInterfacedAttached = Math.min(firstTimeNetworkInterfacedAttached, attachmentTime);
             });
             machineData.firstTimeNetworkInterfacedAttached = new Date(firstTimeNetworkInterfacedAttached);
-            machinesData.push(machineData);
+            machinesData[instance.InstanceId] = machineData;
           });
         });
       }

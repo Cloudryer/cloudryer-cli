@@ -70,7 +70,7 @@ const getInstancesMetrics = async function ({perRegionInstances, startDate, endD
       if (!instancesMetrics[instanceId]) {
         instancesMetrics[instanceId] = {};
       }
-      const metricName = MetricsLabelsMappping[metricDataResult.Label];
+      const metricName = MetricsLabelsMappping[metricDataResult.Label.split(' ')[1]];
       const timestamps = metricDataResult.Timestamps.map((timestamp) => new Date(timestamp));
       let values = metricDataResult.Values;
       if(metricName === Metrics.UpTime){

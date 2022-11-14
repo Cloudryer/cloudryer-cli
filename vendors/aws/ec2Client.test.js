@@ -174,33 +174,35 @@ jest.mock('@aws-sdk/client-ec2', () => {
 describe('getEc2Instances', () => {
   test('it should return an object with all the running instances in each region', async () => {
     const result = await getEc2Instances(['us-east-1']);
-    expect(result).toEqual([
-      {
-        [Resource.Region]: "us-east-1",
-        [Machine.InstanceID]: 'i-08b3f8f7dcc08d7e4',
-        [Machine.InstanceType]: 't2.micro',
-        [Machine.State]: States.Running,
-        [Resource.CreationDate]: new Date('2022-11-07T18:26:28.000Z'),
-        [Machine.OperatingSystem]: 'Linux',
-        "firstTimeNetworkInterfacedAttached": new Date('2022-11-07T18:26:28.000Z'),
-        awsInfo: {
-          "architecture": "x86_64",
-          "description": undefined,
-          "imageId": "ami-09d3b3274b6c5d4aa",
-          "launchTime": "2022-11-07T18:26:28.000Z",
-          "licenses": undefined,
-          "platform": undefined,
-          "platformDetails": "Linux/UNIX",
-          "stateReason": undefined,
-          "stateTransitionReason": "",
-          "tags":  [
-            {
-              "Key": "Name",
-              "Value": "testing",
-            }],
-          "usageOperationUpdateTime": "2022-11-07T18:26:28.000Z",
+    expect(result).toEqual({
+      'i-08b3f8f7dcc08d7e4':
+        {
+          [Resource.Region]: "us-east-1",
+          [Machine.InstanceID]: 'i-08b3f8f7dcc08d7e4',
+          [Machine.InstanceType]: 't2.micro',
+          [Machine.State]: States.Running,
+          [Resource.CreationDate]: new Date('2022-11-07T18:26:28.000Z'),
+          [Machine.OperatingSystem]: 'Linux',
+          "firstTimeNetworkInterfacedAttached": new Date('2022-11-07T18:26:28.000Z'),
+          awsInfo: {
+            "architecture": "x86_64",
+            "description": undefined,
+            "imageId": "ami-09d3b3274b6c5d4aa",
+            "launchTime": "2022-11-07T18:26:28.000Z",
+            "licenses": undefined,
+            "platform": undefined,
+            "platformDetails": "Linux/UNIX",
+            "stateReason": undefined,
+            "stateTransitionReason": "",
+            "tags": [
+              {
+                "Key": "Name",
+                "Value": "testing",
+              }],
+            "usageOperationUpdateTime": "2022-11-07T18:26:28.000Z",
 
+          }
         }
-      }]);
+    });
   });
 });
