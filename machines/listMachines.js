@@ -55,21 +55,15 @@ function calculateUtilization(metrics) {
   return utilizationTimeSeries;
 }
 
-async function getInstances() {
-  let instances = await ec2Client.getEc2Instances(getAwsRegionCodes()); // [{instanceId, type,startTime,endTime, other static properties}]
-  const perRegionInstances = {};
-  instances.forEach(instance => {
-    if (!perRegionInstances[instance[Resource.Region]]) {
-      perRegionInstances[instance[Resource.Region]] = [];
-    }
-    perRegionInstances[instance[Resource.Region]].push(instance[Machine.InstanceID]);
-  });
-  return {instances, perRegionInstances};
-}
+// async function getInstances() {
+//   let instances = await ec2Client.getEc2Instances(getAwsRegionCodes()); // [{instanceId, type,startTime,endTime, other static properties}]
+//
+//   return {instances, };
+// }
 
 
 async function fetchAndAnalyzeInstancesEvents() {
-  const instancesEvents = await cloudTrailClient.lookUpInstancesEvents(getAwsRegionCodes()); // {instanceId:[{event1},{event2}]}
+  const {instancesInfo,instancesEvents} = await cloudTrailClient.lookUpInstancesEvents(getAwsRegionCodes()); // {instanceId:[{event1},{event2}]}
 
   const instancesRunningTimes = {}; // {instanceId:[{startTime,endTime}]}
   const instancesCreator = {}; // {instanceId:user}
@@ -151,9 +145,25 @@ function calculateWastePerInstance(instancesUtilization) {
 async function fetchAndEnrichMachineData({fetchUtilization, calculateWaste, evalPeriodDays}) {
 
   // let instancesAverageCostPerHour = await costClient.getAverageResourcesCostPerHour(evalPeriodDays);
-  let {instances, perRegionInstances} = await getInstances();
+  let instances = await ec2Client.getEc2Instances(getAwsRegionCodes());
 
-  const instancesCreator = await fetchAndAnalyzeInstancesEvents();
+  const {instancesInfo} = await cloudTrailClient.lookUpInstancesEvents(getAwsRegionCodes()); // {instanceId:[{event1},{event2}]}
+  Object.keys(instancesInfo).forEach(instanceId => {
+    let instance = instances[instanceId];
+    if (instance) {
+      instance[Resource.Creator] = instancesInfo[instanceId][Resource.Creator];
+    } else {
+      instances[instanceId] = instancesInfo[instanceId];
+    }
+  });
+
+  const perRegionInstances = {};
+  Object.values(instances).forEach(instance => {
+    if (!perRegionInstances[instance[Resource.Region]]) {
+      perRegionInstances[instance[Resource.Region]] = [];
+    }
+    perRegionInstances[instance[Resource.Region]].push(instance[Machine.InstanceID]);
+  });
 
   const {
     perInstanceMetrics,
@@ -164,13 +174,15 @@ async function fetchAndEnrichMachineData({fetchUtilization, calculateWaste, eval
 
   // let data = require('../testData/fakedMachineData')({fetchUtilization, calculateWaste, evalPeriod});
   // return data;
-  return instances.map(instance => {
+  return Object.values(instances).map(instance => {
     let instanceId = instance[Machine.InstanceID];
     let enrichedInstance = {
       ...instance,
       [Waste.EvalPeriod]: evalPeriodDays,
       [Resource.CreationDate]: instance.startTime,
-      [Resource.Creator]: instancesCreator[instance.instanceId] ? instancesCreator[instance.instanceId] : 'unknown',
+    }
+    if(!instance[Resource.Creator]){
+      enrichedInstance[Resource.Creator] = 'unknown';
     }
     if (fetchUtilization) {
       enrichedInstance[Metrics.CPU] = perInstanceMetrics[instanceId][Metrics.CPU].getLatestValue();

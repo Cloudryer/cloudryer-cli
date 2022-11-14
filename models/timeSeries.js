@@ -29,6 +29,9 @@ class TimeSeries {
   }
 
   getSum() {
+    if (this.values.length === 0) {
+      return 0;
+    }
     return this.values.reduce((sum, value) => sum + value);
   }
 
