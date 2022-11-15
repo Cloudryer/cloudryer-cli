@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Cloudryer CLI",
   "main": "bin/index.js",
+  "type": "module",
   "scripts": {
     "test": "jest"
   },
@@ -20,7 +21,9 @@
     "chalk": "4.1.2",
     "commander": "^9.4.1",
     "console-table-printer": "^2.11.1",
+    "log-update": "^5.0.1",
     "node-emoji": "^1.11.0",
+    "ora": "^6.1.2",
     "yargs": "^17.6.0"
   },
   "devDependencies": {

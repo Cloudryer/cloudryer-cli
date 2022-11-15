@@ -1,5 +1,5 @@
-const {CloudTrailClient, LookupEventsCommand} = require('@aws-sdk/client-cloudtrail');
-const {AuditEvent, AuditEventTypes, Machine, OperatingSystems, States, Resource} = require('../../models/metadata');
+import {CloudTrailClient, LookupEventsCommand} from '@aws-sdk/client-cloudtrail';
+import {AuditEvent, AuditEventTypes, Machine, OperatingSystems, States, Resource} from '../../models/metadata.js';
 
 
 const EventNameToAuditEventType = {
@@ -100,6 +100,4 @@ const lookUpInstancesEvents = async function (regions) {
   return {instancesEvents, instancesInfo};
 
 }
-module.exports = {
-  lookUpInstancesEvents
-}
+export {lookUpInstancesEvents};

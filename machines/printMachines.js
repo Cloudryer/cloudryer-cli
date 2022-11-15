@@ -1,6 +1,6 @@
-const {Table} = require('console-table-printer');
-const chalk = require('chalk');
-const {Machine, States,Resource, Waste, Metrics,Cost} = require('../models/metadata');
+import {Table} from 'console-table-printer';
+import chalk from 'chalk';
+import {Machine, States,Resource, Waste, Metrics,Cost} from '../models/metadata.js';
 
 
 const charLength = {'⚡': 2, '✅': 2, '🛑': 2, '🪦': 2};
@@ -93,42 +93,4 @@ const printSummary = function (machinesData, {evaluationPeriod}) {
   console.log(chalk.yellowBright(`Over the last ${evaluationPeriod} days, you could have saved $${aggregatedWaste} 💰💰💰🤑🤑🤑`));
 };
 
-module.exports = {printMachines, printSummary}
-//
-// const data = [
-//   {
-//     "Region": "us-east-1",
-//     "InstanceID": "i-08b3f8f7dcc08d7e4",
-//     "InstanceType": "t2.micro",
-//     "State": "Running",
-//     "CreationDate": "2022-11-07T18:26:28.000Z",
-//     "OperatingSystem": "Linux",
-//     "awsInfo": {
-//       "launchTime": "2022-11-07T18:26:28.000Z",
-//       "imageId": "ami-09d3b3274b6c5d4aa",
-//       "tags": [
-//         {
-//           "Key": "Name",
-//           "Value": "testing"
-//         }
-//       ],
-//       "architecture": "x86_64",
-//       "platformDetails": "Linux/UNIX",
-//       "stateTransitionReason": "",
-//       "usageOperationUpdateTime": "2022-11-07T18:26:28.000Z"
-//     },
-//     "firstTimeNetworkInterfacedAttached": "2022-11-07T18:26:28.000Z",
-//     "EvalPeriod": "13",
-//     "Creator": "unknown",
-//     "CPU": 13.5593220338983,
-//     "DiskReadWriteOps": 0,
-//     "NetworkPacketsInOut": 886,
-//     "UpTime": 37,
-//     "TotalCost": 0.42919999999999997,
-//     "TotalWaste": 0.42919999999999997,
-//     "IdlePct": "100%"
-//   }
-// ];
-//
-// printMachines(data, {hideUtilization: false, calculateWaste: true, evaluationPeriod: 13});
-// printSummary(data, {evaluationPeriod: 13});
+export {printMachines, printSummary};
