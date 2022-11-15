@@ -13,6 +13,21 @@ const States = {
   Starting: "Starting",
 }
 
+const AuditEventTypes = {
+  CreateMachine: "CreateMachine",
+  StopMachine: "StopMachine",
+  StartMachine: "StartMachine",
+  TerminateMachine: "TerminateMachine",
+  Other: "Other",
+}
+
+const AuditEvent = {
+  Type: "Type",
+  Date: "Date",
+  Username: "Username",
+
+}
+
 const Machine = {
   State: "State",
   InstanceID: "InstanceID",
@@ -48,4 +63,4 @@ const Cost = {
   CostPerHour: "CostPerHour"
 }
 
-module.exports = {States, Machine, Metrics, Waste,Cost, Resource,OperatingSystems};
+module.exports = {States, Machine, Metrics, Waste,Cost, Resource,OperatingSystems,AuditEvent,AuditEventTypes};
