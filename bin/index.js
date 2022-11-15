@@ -17,7 +17,7 @@ program.command('list-machines')
   .action(async (options) => {
     const {listMachines} = require('../machines/commands');
     await listMachines(options);
-    
+
 
   });
 
