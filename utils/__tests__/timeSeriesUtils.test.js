@@ -1,5 +1,5 @@
-const {timeSeriesScalarOperation, multiTimeSeriesScalarOperation} = require('./timeSeriesUtils');
-const TimeSeries = require('../models/timeSeries');
+import {multiTimeSeriesScalarOperation} from '../timeSeriesUtils.js';
+import TimeSeries from '../../models/timeSeries.js';
 
 describe('multiTimeSeriesScalarOperation', () => {
   test('it should return the sum of the values', () => {

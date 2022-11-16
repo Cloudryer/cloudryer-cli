@@ -1,3 +1,5 @@
+import {jest} from "@jest/globals";
+import {Machine,OperatingSystems,Resource,States} from '../../../models/metadata.js';
 const responsePayload = {
   "$metadata": {
     "httpStatusCode": 200,
@@ -324,10 +326,8 @@ const responsePayload = {
     }
   ]
 };
-const {AuditEvent, AuditEventTypes,Machine,OperatingSystems,Resource,States} = require('../../models/metadata');
-const {lookUpInstancesEvents} = require('./cloudTrailClient');
 
-jest.mock('@aws-sdk/client-cloudtrail', () => {
+jest.unstable_mockModule('@aws-sdk/client-cloudtrail', () => {
   return {
     LookupEventsCommand: jest.fn(),
     CloudTrailClient: jest.fn().mockImplementation(() => {
@@ -342,6 +342,7 @@ jest.mock('@aws-sdk/client-cloudtrail', () => {
 
 describe('CloudTrailClient', () => {
   it('should return the correct response', async () => {
+    const {lookUpInstancesEvents} = (await import('../cloudTrailClient.js'));
     const {instancesEvents, instancesInfo} = await lookUpInstancesEvents(['us-east-1']);
     const expectedInstances = ['i-08b3f8f7dcc08d7e4', 'i-0f3fbbbc0298d1a86','i-075ea41997e5fd321','i-052b067f18ed43dc6'];
     expect(Object.keys(instancesInfo).sort()).toEqual(expectedInstances.sort());

@@ -59,6 +59,4 @@ const getAverageResourcesCostPerHour = async function (evalationPeriodDays) {
 
 }
 
-export default class CostClient {
-  getAverageResourcesCostPerHour
-};
+export {getAverageResourcesCostPerHour};

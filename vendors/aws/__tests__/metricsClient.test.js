@@ -1,6 +1,7 @@
-const {Metrics} = require('../../models/metadata');
-const TimeSeries = require('../../models/timeSeries');
-const {getInstancesMetrics} = require('./metricsClient');
+import {jest} from '@jest/globals';
+import {Metrics} from '../../../models/metadata.js';
+import TimeSeries from '../../../models/timeSeries.js';
+
 
 
 const awsResponsePayload = {
@@ -129,7 +130,7 @@ const awsResponsePayload = {
   "Messages": []
 }
 
-jest.mock('@aws-sdk/client-cloudwatch', () => {
+jest.unstable_mockModule('@aws-sdk/client-cloudwatch', async () => {
   return {
     GetMetricDataCommand: jest.fn(),
     CloudWatchClient: jest.fn().mockImplementation(() => {
@@ -142,12 +143,13 @@ jest.mock('@aws-sdk/client-cloudwatch', () => {
   };
 });
 
-jest.setTimeout(30000);
 describe('getInstancesMetrics', () => {
     test('it should return the metrics for the given instances', async () => {
       const perRegionInstances = {'us-east-1': ['i-08b3f8f7dcc08d7e4']};
       const endDate = new Date();
       const startDate = new Date(endDate.getTime() - 1000 * 60 * 60 * 24 * 7);
+
+      const {getInstancesMetrics} = (await import('../metricsClient.js'));
       const result = await getInstancesMetrics({perRegionInstances, startDate, endDate});
 
       const timestamps = ["2022-11-07T22:17:00.000Z", "2022-11-07T21:17:00.000Z", "2022-11-07T20:17:00.000Z", "2022-11-07T19:17:00.000Z", "2022-11-07T18:17:00.000Z"].map((t) => new Date(t));

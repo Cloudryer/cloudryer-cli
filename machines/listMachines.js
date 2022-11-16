@@ -1,4 +1,3 @@
-import Ora from 'ora';
 import {printMachines, printSummary} from './printMachines.js';
 import * as InstancesClient from '../vendors/aws/ec2Client.js';
 import * as MetricsClient from '../vendors/aws/metricsClient.js';
@@ -7,6 +6,7 @@ import {getAwsRegionCodes} from '../vendors/aws/utils.js';
 import {multiTimeSeriesScalarOperation, sumTwoTimeSeries} from '../utils/timeSeriesUtils.js';
 import {Machine, Waste, Metrics, Cost, Resource} from '../models/metadata.js';
 import {getInstanceCostPerHour} from '../vendors/aws/pricingCatalog.js';
+import {printUpdate} from '../utils/printingUtils.js';
 
 const MILLIS_PER_DAY = 24 * 60 * 60 * 1000;
 
@@ -16,15 +16,7 @@ const utilizationThresholds = {
   [Metrics.NetworkPacketsInOut]: 2000
 }
 
-let spinner;
-const printUpdate = function (message) {
-  if (spinner) {
-    spinner.succeed(`${spinner.text} - Completed!`);
-  }
-  if (message) {
-    spinner = Ora(message).start();
-  }
-};
+
 /**
  * Print the list of machines and returns a list of machines with their utilization and waste
  * @param hideUtilization

@@ -1,8 +1,9 @@
-const TimeSeries = require('../../models/timeSeries');
-const {Cost} = require('../../models/metadata');
-const {getAverageResourcesCostPerHour} = require('./costClient');
+import {jest} from '@jest/globals';
+import TimeSeries from '../../../models/timeSeries.js';
+import {Cost} from '../../../models/metadata.js';
 
-jest.mock('@aws-sdk/client-cost-explorer', () => {
+
+jest.unstable_mockModule('@aws-sdk/client-cost-explorer', () => {
   return {
     GetCostAndUsageWithResourcesCommand: jest.fn(),
     CostExplorerClient: jest.fn().mockImplementation(() => {
@@ -106,7 +107,7 @@ jest.mock('@aws-sdk/client-cost-explorer', () => {
 describe('getAverageResourcesCostPerHour', () => {
   test('it should return a cost per hour timeseries data for each of the resources', async () => {
     const evalationPeriodDays = 7;
-
+    const {getAverageResourcesCostPerHour} = (await import('../costClient.js'));
     let result = await getAverageResourcesCostPerHour(evalationPeriodDays);
     expect(result).toEqual({
       'i-052b067f18ed43dc6': new TimeSeries(Cost.CostPerHour, [0.0116, 0.0116], ["2022-11-01T23:00:00.000Z", "2022-11-01T22:00:00.000Z"]),
