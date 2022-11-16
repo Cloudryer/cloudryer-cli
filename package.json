@@ -1,6 +1,6 @@
 {
   "name": "cloudryer-cli",
-  "version": "1.0.2",
+  "version": "1.0.0",
   "description": "Cloudryer CLI",
   "main": "bin/index.js",
   "type": "module",
