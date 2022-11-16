@@ -20,7 +20,7 @@
     "@aws-sdk/client-cloudwatch": "^3.198.0",
     "@aws-sdk/client-cost-explorer": "^3.198.0",
     "@aws-sdk/client-ec2": "^3.196.0",
-    "@aws-sdk/client-pricing": "^3.196.0",
+    "@aws-sdk/client-pricing": "^3.197.0",
     "commander": "^9.4.1",
     "console-table-printer": "^2.11.1",
     "node-emoji": "^1.11.0",
