@@ -1,10 +1,7 @@
-const {
-  CostExplorerClient,
-  GetCostAndUsageWithResourcesCommand,
-} = require("@aws-sdk/client-cost-explorer");
-const {convertDateObjectToAwsDate} = require('./utils');
-const {Cost} = require("../../models/metadata");
-const TimeSeries = require("../../models/timeSeries");
+import {CostExplorerClient, GetCostAndUsageWithResourcesCommand} from '@aws-sdk/client-cost-explorer';
+import {convertDateObjectToAwsDate} from './utils.js';
+import {Cost} from '../../models/metadata.js';
+import TimeSeries from '../../models/timeSeries.js';
 
 const COST_EXPLORER_REGION_ENDPOINT = 'us-east-1';
 
@@ -62,6 +59,4 @@ const getAverageResourcesCostPerHour = async function (evalationPeriodDays) {
 
 }
 
-module.exports = {
-  getAverageResourcesCostPerHour
-}
+export {getAverageResourcesCostPerHour};

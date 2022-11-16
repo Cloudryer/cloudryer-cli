@@ -1,8 +1,5 @@
-const {Machine, States, Resource, OperatingSystems} = require('../../models/metadata');
-const {
-  EC2Client,
-  DescribeInstancesCommand,
-} = require("@aws-sdk/client-ec2");
+import {Machine, States, Resource, OperatingSystems} from '../../models/metadata.js';
+import {EC2Client, DescribeInstancesCommand} from '@aws-sdk/client-ec2';
 
 const STATES_MAPPING = {
   "pending": States.Pending,
@@ -78,6 +75,5 @@ const getEc2Instances = async function (regions) {
   return machinesData;
 }
 
-module.exports = {
-  getEc2Instances
-}
+
+export {getEc2Instances};

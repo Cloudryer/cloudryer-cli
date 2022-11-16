@@ -1,6 +1,6 @@
-const {CloudWatchClient, GetMetricDataCommand} = require("@aws-sdk/client-cloudwatch");
-const {Metrics} = require('../../models/metadata');
-const TimeSeries = require('../../models/timeSeries');
+import {CloudWatchClient, GetMetricDataCommand} from '@aws-sdk/client-cloudwatch';
+import {Metrics} from '../../models/metadata.js';
+import TimeSeries from '../../models/timeSeries.js';
 
 const METRIC_PERIOD_SEC = 3600;
 
@@ -65,7 +65,7 @@ const getInstancesMetrics = async function ({perRegionInstances, startDate, endD
     const data = await client.send(new GetMetricDataCommand(params));
 
     data.MetricDataResults.forEach((metricDataResult) => {
-      let idParts=metricDataResult.Id.split('_');
+      let idParts = metricDataResult.Id.split('_');
       const instanceId = `i-${idParts[1]}`;
       if (!instancesMetrics[instanceId]) {
         instancesMetrics[instanceId] = {};
@@ -73,7 +73,7 @@ const getInstancesMetrics = async function ({perRegionInstances, startDate, endD
       const metricName = MetricsLabelsMappping[metricDataResult.Label.split(' ')[1]];
       const timestamps = metricDataResult.Timestamps.map((timestamp) => new Date(timestamp));
       let values = metricDataResult.Values;
-      if(metricName === Metrics.UpTime){
+      if (metricName === Metrics.UpTime) {
         values = values.map((value) => value === 0 ? 1 : 0);
       }
       instancesMetrics[instanceId][metricName] = new TimeSeries(metricName, values, timestamps);
@@ -83,6 +83,6 @@ const getInstancesMetrics = async function ({perRegionInstances, startDate, endD
   return instancesMetrics;
 };
 
-module.exports = {
+export {
   getInstancesMetrics
 };

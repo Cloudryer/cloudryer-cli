@@ -1,5 +1,6 @@
 #! /usr/bin/env node
-const {Command} = require('commander');
+import {Command} from 'commander';
+import {listMachines} from '../machines/commands.js';
 const program = new Command();
 
 program
@@ -15,7 +16,7 @@ program.command('list-machines')
   .option('-w, --calculate-waste', 'Calculate money waste over a period of time')
   .option('-p, --evaluation-period [number]', 'Set waste evaluation period in days', 90)
   .action(async (options) => {
-    const {listMachines} = require('../machines/commands');
+
     await listMachines(options);
 
 

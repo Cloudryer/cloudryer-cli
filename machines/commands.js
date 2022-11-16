@@ -1,5 +1,3 @@
-const listMachines = require('./listMachines');
+import {listMachines} from './listMachines.js';
 
-module.exports = {
-  listMachines,
-};
+export {listMachines};

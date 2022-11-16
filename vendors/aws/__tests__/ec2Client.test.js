@@ -1,8 +1,9 @@
-const {Machine, States, Resource} = require("../../models/metadata");
+import {jest} from '@jest/globals';
+import {Machine, States, Resource} from '../../../models/metadata.js';
 
-const {getEc2Instances} = require('./ec2Client');
 
-jest.mock('@aws-sdk/client-ec2', () => {
+
+jest.unstable_mockModule('@aws-sdk/client-ec2', () => {
   return {
     DescribeInstancesCommand: jest.fn(),
     EC2Client: jest.fn().mockImplementation(() => {
@@ -173,6 +174,7 @@ jest.mock('@aws-sdk/client-ec2', () => {
 
 describe('getEc2Instances', () => {
   test('it should return an object with all the running instances in each region', async () => {
+    const {getEc2Instances} = (await import('../ec2Client.js'));
     const result = await getEc2Instances(['us-east-1']);
     expect(result).toEqual({
       'i-08b3f8f7dcc08d7e4':

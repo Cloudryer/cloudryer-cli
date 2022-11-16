@@ -1,4 +1,4 @@
-const TimeSeries = require('../models/timeSeries');
+import TimeSeries from '../models/timeSeries.js';
 
 
 const union = (arrays) => {
@@ -54,7 +54,4 @@ const sumTwoTimeSeries = function (timeSeries1, timeSeries2, newTimeSeriesName) 
 }
 
 
-module.exports = {
-  multiTimeSeriesScalarOperation,
-  sumTwoTimeSeries
-}
+export {multiTimeSeriesScalarOperation, sumTwoTimeSeries};

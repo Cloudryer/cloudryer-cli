@@ -1,11 +1,12 @@
-const {printMachines, printSummary} = require('./printMachines');
-const ec2Client = require('../vendors/aws/ec2Client');
-const metricsClient = require('../vendors/aws/metricsClient');
-const cloudTrailClient = require('../vendors/aws/cloudTrailClient');
-const {getAwsRegionCodes} = require('../vendors/aws/utils');
-const {multiTimeSeriesScalarOperation, sumTwoTimeSeries} = require('../utils/timeSeriesUtils');
-const {Machine, Waste, Metrics, Cost, Resource} = require('../models/metadata');
-const {getInstanceCostPerHour} = require('../vendors/aws/pricingCatalog');
+import {printMachines, printSummary} from './printMachines.js';
+import * as InstancesClient from '../vendors/aws/ec2Client.js';
+import * as MetricsClient from '../vendors/aws/metricsClient.js';
+import * as CloudTrailClient from '../vendors/aws/cloudTrailClient.js';
+import {getAwsRegionCodes} from '../vendors/aws/utils.js';
+import {multiTimeSeriesScalarOperation, sumTwoTimeSeries} from '../utils/timeSeriesUtils.js';
+import {Machine, Waste, Metrics, Cost, Resource} from '../models/metadata.js';
+import {getInstanceCostPerHour} from '../vendors/aws/pricingCatalog.js';
+import {printUpdate} from '../utils/printingUtils.js';
 
 const MILLIS_PER_DAY = 24 * 60 * 60 * 1000;
 
@@ -14,6 +15,8 @@ const utilizationThresholds = {
   [Metrics.DiskReadWriteOps]: 100,
   [Metrics.NetworkPacketsInOut]: 2000
 }
+
+
 /**
  * Print the list of machines and returns a list of machines with their utilization and waste
  * @param hideUtilization
@@ -63,7 +66,7 @@ function calculateUtilization(metrics) {
 
 
 async function fetchAndAnalyzeInstancesEvents() {
-  const {instancesInfo,instancesEvents} = await cloudTrailClient.lookUpInstancesEvents(getAwsRegionCodes()); // {instanceId:[{event1},{event2}]}
+  const {instancesInfo, instancesEvents} = await cloudTrailClient.lookUpInstancesEvents(getAwsRegionCodes()); // {instanceId:[{event1},{event2}]}
 
   const instancesRunningTimes = {}; // {instanceId:[{startTime,endTime}]}
   const instancesCreator = {}; // {instanceId:user}
@@ -105,7 +108,7 @@ async function fetchMetricsAndAnalyzeUtilization(evalPeriodDays, fetchUtilizatio
   let dateMinusEvalPeriod = new Date(endDate - evalPeriodDays * MILLIS_PER_DAY);
   let perInstanceMetrics;
   if (fetchUtilization) {
-    perInstanceMetrics = await metricsClient.getInstancesMetrics({ // {instanceId:[{metric1},{metric2}]}
+    perInstanceMetrics = await MetricsClient.getInstancesMetrics({ // {instanceId:[{metric1},{metric2}]}
       perRegionInstances,
       startDate: dateMinusEvalPeriod,
       endDate: endDate
@@ -121,33 +124,14 @@ async function fetchMetricsAndAnalyzeUtilization(evalPeriodDays, fetchUtilizatio
   return {perInstanceMetrics, instancesUtilization};
 }
 
-/*
-we should probably remove this function
-function calculateWastePerInstance(instancesUtilization) {
-  const wastePerInstance = {};
-  Object.keys(instancesUtilization).forEach(instanceId => {
-    const utilization = instancesUtilization[instanceId];
-    const averageCostPerHour = instancesAverageCostPerHour[instanceId];
-    const wasteTimeseries = multiTimeSeriesScalarOperation([utilization, averageCostPerHour], (perTimestampValues) => {
-      if (perTimestampValues[utilization.getName()] && perTimestampValues[averageCostPerHour.getName()]) {
-        if (perTimestampValues[utilization.getName()] === 0) {
-          return perTimestampValues[averageCostPerHour.getName()];
-        }
-      }
-      return 0;
-    });
-    wasteTimeseries.setName(`${instanceId}_waste`);
-    wastePerInstance[instanceId] = wasteTimeseries;
-  });
-  return wastePerInstance;
-}*/
+
 
 async function fetchAndEnrichMachineData({fetchUtilization, calculateWaste, evalPeriodDays}) {
 
-  // let instancesAverageCostPerHour = await costClient.getAverageResourcesCostPerHour(evalPeriodDays);
-  let instances = await ec2Client.getEc2Instances(getAwsRegionCodes());
-
-  const {instancesInfo} = await cloudTrailClient.lookUpInstancesEvents(getAwsRegionCodes()); // {instanceId:[{event1},{event2}]}
+  printUpdate('Fetching instances from EC2 API');
+  let instances = await InstancesClient.getEc2Instances(getAwsRegionCodes());
+  printUpdate('Fetching instances events from CloudTrail API');
+  const {instancesInfo} = await CloudTrailClient.lookUpInstancesEvents(getAwsRegionCodes()); // {instanceId:[{event1},{event2}]}
   Object.keys(instancesInfo).forEach(instanceId => {
     let instance = instances[instanceId];
     if (instance) {
@@ -165,15 +149,13 @@ async function fetchAndEnrichMachineData({fetchUtilization, calculateWaste, eval
     perRegionInstances[instance[Resource.Region]].push(instance[Machine.InstanceID]);
   });
 
+  printUpdate('Fetching instances metrics from CloudWatch API');
   const {
     perInstanceMetrics,
     instancesUtilization
   } = await fetchMetricsAndAnalyzeUtilization(evalPeriodDays, fetchUtilization, perRegionInstances);
+  printUpdate();
 
-  // const perInstanceWaste = calculateWastePerInstance(instancesUtilization);
-
-  // let data = require('../testData/fakedMachineData')({fetchUtilization, calculateWaste, evalPeriod});
-  // return data;
   return Object.values(instances).map(instance => {
     let instanceId = instance[Machine.InstanceID];
     let enrichedInstance = {
@@ -181,10 +163,11 @@ async function fetchAndEnrichMachineData({fetchUtilization, calculateWaste, eval
       [Waste.EvalPeriod]: evalPeriodDays,
       [Resource.CreationDate]: instance.startTime,
     }
-    if(!instance[Resource.Creator]){
+    if (!instance[Resource.Creator]) {
       enrichedInstance[Resource.Creator] = 'unknown';
     }
     if (fetchUtilization) {
+
       enrichedInstance[Metrics.CPU] = perInstanceMetrics[instanceId][Metrics.CPU].getLatestValue();
       enrichedInstance[Metrics.DiskReadWriteOps] = perInstanceMetrics[instanceId][Metrics.DiskReadWriteOps].getLatestValue();
       enrichedInstance[Metrics.NetworkPacketsInOut] = perInstanceMetrics[instanceId][Metrics.NetworkPacketsInOut].getLatestValue();
@@ -208,4 +191,4 @@ async function fetchAndEnrichMachineData({fetchUtilization, calculateWaste, eval
 
 }
 
-module.exports = listMachines;
+export {listMachines};

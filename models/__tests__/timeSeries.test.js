@@ -1,4 +1,4 @@
-const TimeSeries = require('./timeSeries');
+import TimeSeries from '../timeSeries.js';
 
 
 describe('TimeSeries', () => {

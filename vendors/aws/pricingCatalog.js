@@ -1,4 +1,6 @@
-const PricingCatalog = require('./pricing.json')
+import { createRequire } from "module";
+const require = createRequire(import.meta.url);  // construct the require method
+const PricingCatalog = require("./pricing.json");
 
 
 const getInstanceCostPerHour = function ({region, instanceType, operatingSystem}) {
@@ -10,6 +12,6 @@ const getInstanceCostPerHour = function ({region, instanceType, operatingSystem}
   return cost;
 }
 
-module.exports = {
+export {
   getInstanceCostPerHour
-}
+};

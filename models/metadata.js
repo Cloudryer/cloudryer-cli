@@ -63,4 +63,4 @@ const Cost = {
   CostPerHour: "CostPerHour"
 }
 
-module.exports = {States, Machine, Metrics, Waste,Cost, Resource,OperatingSystems,AuditEvent,AuditEventTypes};
+export {States, Machine, Metrics, Waste,Cost, Resource,OperatingSystems,AuditEvent,AuditEventTypes};

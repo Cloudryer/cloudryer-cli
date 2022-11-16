@@ -1,4 +1,4 @@
-class TimeSeries {
+export default class TimeSeries {
   constructor(name, valuesArray, timestampsArray) {
     this.name = name;
     this.values = valuesArray;
@@ -75,6 +75,5 @@ class TimeSeries {
   setName(name) {
     this.name = name;
   }
-}
+};
 
-module.exports = TimeSeries;
