@@ -58,45 +58,6 @@ function calculateUtilization(metrics) {
   return utilizationTimeSeries;
 }
 
-// async function getInstances() {
-//   let instances = await ec2Client.getEc2Instances(getAwsRegionCodes()); // [{instanceId, type,startTime,endTime, other static properties}]
-//
-//   return {instances, };
-// }
-
-
-async function fetchAndAnalyzeInstancesEvents() {
-  const {instancesInfo, instancesEvents} = await cloudTrailClient.lookUpInstancesEvents(getAwsRegionCodes()); // {instanceId:[{event1},{event2}]}
-
-  const instancesRunningTimes = {}; // {instanceId:[{startTime,endTime}]}
-  const instancesCreator = {}; // {instanceId:user}
-  const instanceStateStats = {}; // {instanceId:{'runningHr':number,'stoppedHr':number,'lifetimeHr':number}}
-  Object.keys(instancesEvents).forEach(instanceId => {
-    let events = instancesEvents[instanceId];
-    instancesCreator[instanceId] = null;
-    instancesRunningTimes[instanceId] = [];
-    instanceStateStats[instanceId] = {};
-    events.sort((event1, event2) => {
-      return event1.date - event2.date;
-    }).forEach(event => {
-      if (event.name === 'RunInstances') {
-        instancesCreator[instanceId] = event.username;
-        instancesRunningTimes[instanceId].push({startTime: event.date});
-      } else if (event.name === 'StartInstances') {
-        instancesRunningTimes[instanceId].push({startTime: event.date});
-      } else if (event.name === 'TerminateInstances' || event.name === 'StopInstances') {
-        if (instancesRunningTimes[instanceId].length - 1 >= 0) {
-          instancesRunningTimes[instanceId][instancesRunningTimes[instanceId].length - 1].endTime = event.date;
-        } else {
-          instancesRunningTimes[instanceId].push({endTime: event.date});
-        }
-
-      }
-    });
-  });
-  return instancesCreator;
-}
-
 async function fetchMetricsAndAnalyzeUtilization(evalPeriodDays, fetchUtilization, perRegionInstances) {
   const instancesUtilization = {};
   let currentDate = new Date();
