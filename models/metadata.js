@@ -52,6 +52,15 @@ const Metrics = {
   Utilization: "Utilization",
 }
 
+const Lifecycle = {
+  DaysSinceLastUtilization: "DaysSinceLastUtilization",
+  DaysSinceLastStateChange: "DaysSinceLastStateChange",
+  DaysSinceCreation: "DaysSinceCreation",
+  LastUtilizationDate: "LastUtilizationDate",
+  LastStateChangeDate: "LastStateChangeDate",
+
+}
+
 const Waste = {
   TotalWaste: "TotalWaste",
   IdlePct: "IdlePct",
@@ -63,4 +72,4 @@ const Cost = {
   CostPerHour: "CostPerHour"
 }
 
-export {States, Machine, Metrics, Waste,Cost, Resource,OperatingSystems,AuditEvent,AuditEventTypes};
+export {States, Machine, Metrics, Waste,Cost, Resource,OperatingSystems,AuditEvent,AuditEventTypes,Lifecycle};

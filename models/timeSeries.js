@@ -8,6 +8,7 @@ export default class TimeSeries {
   getName() {
     return this.name;
   }
+
   getValues() {
     return this.values;
   }
@@ -43,8 +44,8 @@ export default class TimeSeries {
     const minValue = Math.min(...this.values);
     const maxValue = Math.max(...this.values);
     let normalizedValues;
-    if(minValue === maxValue) {
-      if(minValue === 0) {
+    if (minValue === maxValue) {
+      if (minValue === 0) {
         normalizedValues = this.values.map(() => min);
       } else {
         normalizedValues = this.values.map(() => max);
@@ -74,6 +75,14 @@ export default class TimeSeries {
 
   setName(name) {
     this.name = name;
+  }
+
+  lastTimestamp(evalFunc) {
+    for (let i = this.timestamps.length - 1; i >= 0; i--) {
+      if (evalFunc(this.values[i])) {
+        return this.timestamps[i];
+      }
+    }
   }
 };
 

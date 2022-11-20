@@ -1,6 +1,7 @@
 import {CloudWatchClient, GetMetricDataCommand} from '@aws-sdk/client-cloudwatch';
 import {Metrics} from '../../models/metadata.js';
 import TimeSeries from '../../models/timeSeries.js';
+import {printUpdate} from "../../utils/printingUtils.js";
 
 const METRIC_PERIOD_SEC = 3600;
 
@@ -61,7 +62,7 @@ const getInstancesMetrics = async function ({perRegionInstances, startDate, endD
       params.MetricDataQueries.push(createMetricPayload(instanceId, 'DiskWriteOps'));
     });
 
-
+    printUpdate('Fetching instances metrics from CloudWatch API for region ' + region);
     const data = await client.send(new GetMetricDataCommand(params));
 
     data.MetricDataResults.forEach((metricDataResult) => {
@@ -71,7 +72,7 @@ const getInstancesMetrics = async function ({perRegionInstances, startDate, endD
         instancesMetrics[instanceId] = {};
       }
       const metricName = MetricsLabelsMappping[metricDataResult.Label.split(' ')[1]];
-      const timestamps = metricDataResult.Timestamps.map((timestamp) => new Date(timestamp));
+      const timestamps = metricDataResult.Timestamps.map((timestamp) => new Date(timestamp).toISOString());
       let values = metricDataResult.Values;
       if (metricName === Metrics.UpTime) {
         values = values.map((value) => value === 0 ? 1 : 0);

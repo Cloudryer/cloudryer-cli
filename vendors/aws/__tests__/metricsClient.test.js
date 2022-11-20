@@ -2,7 +2,12 @@ import {jest} from '@jest/globals';
 import {Metrics} from '../../../models/metadata.js';
 import TimeSeries from '../../../models/timeSeries.js';
 
-
+// this is just a hack to resolve ESM loaidng issues
+jest.unstable_mockModule('../../../utils/printingUtils.js', () => {
+  return {
+    printUpdate: jest.fn()
+  };
+});
 
 const awsResponsePayload = {
   "$metadata": {
@@ -152,7 +157,7 @@ describe('getInstancesMetrics', () => {
       const {getInstancesMetrics} = (await import('../metricsClient.js'));
       const result = await getInstancesMetrics({perRegionInstances, startDate, endDate});
 
-      const timestamps = ["2022-11-07T22:17:00.000Z", "2022-11-07T21:17:00.000Z", "2022-11-07T20:17:00.000Z", "2022-11-07T19:17:00.000Z", "2022-11-07T18:17:00.000Z"].map((t) => new Date(t));
+      const timestamps = ["2022-11-07T22:17:00.000Z", "2022-11-07T21:17:00.000Z", "2022-11-07T20:17:00.000Z", "2022-11-07T19:17:00.000Z", "2022-11-07T18:17:00.000Z"];
       const cpuValues = [1.16666666666667, 1.18644067796611, 0.500000000000007, 19.5, 13.5593220338983];
       const networkInValues = [399, 531, 188, 485, 500];
       const networkOutValues = [425, 520, 135, 446, 386];

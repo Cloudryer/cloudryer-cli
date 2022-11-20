@@ -2,6 +2,12 @@ import {jest} from '@jest/globals';
 import TimeSeries from '../../../models/timeSeries.js';
 import {Cost} from '../../../models/metadata.js';
 
+// this is just a hack to resolve ESM loaidng issues
+jest.unstable_mockModule('../../../utils/printingUtils.js', () => {
+  return {
+    printUpdate: jest.fn()
+  };
+});
 
 jest.unstable_mockModule('@aws-sdk/client-cost-explorer', () => {
   return {

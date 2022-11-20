@@ -1,5 +1,6 @@
 import {Machine, States, Resource, OperatingSystems} from '../../models/metadata.js';
 import {EC2Client, DescribeInstancesCommand} from '@aws-sdk/client-ec2';
+import {printUpdate} from "../../utils/printingUtils.js";
 
 const STATES_MAPPING = {
   "pending": States.Pending,
@@ -21,6 +22,7 @@ const getEc2Instances = async function (regions) {
   let machinesData = {};
   for (let region of regions) {
     try {
+      printUpdate('Fetching instances from EC2 API for region ' + region);
       const ec2Client = new EC2Client({region: region});
       let fetchNextBatch = true;
       let nextToken = null;

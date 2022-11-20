@@ -1,5 +1,5 @@
 import {jest} from '@jest/globals';
-import {States, Metrics, Waste, Machine, Resource, Cost, OperatingSystems} from '../../models/metadata';
+import {States, Metrics, Waste, Machine, Resource, Cost, OperatingSystems, Lifecycle} from '../../models/metadata';
 import TimeSeries from "../../models/timeSeries.js";
 
 jest.unstable_mockModule('../../vendors/aws/ec2Client.js', () => {
@@ -53,7 +53,7 @@ describe('listMachines', () => {
         [Machine.OperatingSystem]: OperatingSystems.Linux
       }
     });
-    lookUpInstancesEvents.mockResolvedValueOnce({instancesInfo: {}});
+    lookUpInstancesEvents.mockResolvedValueOnce({instancesInfo: {},instancesEvents: {}});
     getInstancesMetrics.mockResolvedValueOnce({
       [instanceId]: {
         [Metrics.UpTime]: new TimeSeries(Metrics.UpTime, [1, 1, 1], timestamps),
@@ -86,6 +86,7 @@ describe('listMachines', () => {
       [Waste.EvalPeriod]: evaluationPeriod,
       [Resource.Creator]: 'unknown',
       [Resource.CreationDate]: new Date(date),
+      [Lifecycle.LastUtilizationDate]: "2022-11-07T20:17:00.000Z"
     }]);
   });
 
