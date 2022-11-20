@@ -3,6 +3,14 @@ import {Machine, States, Resource} from '../../../models/metadata.js';
 
 
 
+// this is just a hack to resolve ESM loaidng issues
+jest.unstable_mockModule('../../../utils/printingUtils.js', () => {
+  return {
+    printUpdate: jest.fn()
+  };
+});
+
+
 jest.unstable_mockModule('@aws-sdk/client-ec2', () => {
   return {
     DescribeInstancesCommand: jest.fn(),

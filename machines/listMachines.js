@@ -4,7 +4,7 @@ import * as MetricsClient from '../vendors/aws/metricsClient.js';
 import * as CloudTrailClient from '../vendors/aws/cloudTrailClient.js';
 import {getAwsRegionCodes} from '../vendors/aws/utils.js';
 import {multiTimeSeriesScalarOperation, sumTwoTimeSeries} from '../utils/timeSeriesUtils.js';
-import {Machine, Waste, Metrics, Cost, Resource} from '../models/metadata.js';
+import {Machine, Waste, Metrics, Cost, Resource, Lifecycle, AuditEvent} from '../models/metadata.js';
 import {getInstanceCostPerHour} from '../vendors/aws/pricingCatalog.js';
 import {printUpdate} from '../utils/printingUtils.js';
 
@@ -27,7 +27,7 @@ const utilizationThresholds = {
 const listMachines = async function ({hideUtilization, calculateWaste, evaluationPeriod}) {
 
   const enrichedMachinesData = await fetchAndEnrichMachineData({
-    fetchUtilization: !hideUtilization,
+    fetchUtilization: calculateWaste || !hideUtilization,
     calculateWaste,
     evalPeriodDays: evaluationPeriod
   });
@@ -35,7 +35,7 @@ const listMachines = async function ({hideUtilization, calculateWaste, evaluatio
   if (calculateWaste) {
     printSummary(enrichedMachinesData, {hideUtilization, calculateWaste, evaluationPeriod});
   }
-  // console.log(JSON.stringify(enrichedMachinesData, null, 2));
+
   return enrichedMachinesData;
 };
 
@@ -86,13 +86,11 @@ async function fetchMetricsAndAnalyzeUtilization(evalPeriodDays, fetchUtilizatio
 }
 
 
-
 async function fetchAndEnrichMachineData({fetchUtilization, calculateWaste, evalPeriodDays}) {
 
-  printUpdate('Fetching instances from EC2 API');
+  const currentDate = new Date();
   let instances = await InstancesClient.getEc2Instances(getAwsRegionCodes());
-  printUpdate('Fetching instances events from CloudTrail API');
-  const {instancesInfo} = await CloudTrailClient.lookUpInstancesEvents(getAwsRegionCodes()); // {instanceId:[{event1},{event2}]}
+  const {instancesInfo, instancesEvents} = await CloudTrailClient.lookUpInstancesEvents(getAwsRegionCodes()); // {instanceId:[{event1},{event2}]}
   Object.keys(instancesInfo).forEach(instanceId => {
     let instance = instances[instanceId];
     if (instance) {
@@ -110,7 +108,6 @@ async function fetchAndEnrichMachineData({fetchUtilization, calculateWaste, eval
     perRegionInstances[instance[Resource.Region]].push(instance[Machine.InstanceID]);
   });
 
-  printUpdate('Fetching instances metrics from CloudWatch API');
   const {
     perInstanceMetrics,
     instancesUtilization
@@ -122,16 +119,20 @@ async function fetchAndEnrichMachineData({fetchUtilization, calculateWaste, eval
     let enrichedInstance = {
       ...instance,
       [Waste.EvalPeriod]: evalPeriodDays,
-      [Resource.CreationDate]: instance.startTime,
     }
+    if (instancesEvents[instanceId] && instancesEvents[instanceId].length > 0) {
+      enrichedInstance[Lifecycle.LastStateChangeDate]= instancesEvents[instanceId][0][AuditEvent.Date];
+    }
+
     if (!instance[Resource.Creator]) {
       enrichedInstance[Resource.Creator] = 'unknown';
     }
     if (fetchUtilization) {
-
       enrichedInstance[Metrics.CPU] = perInstanceMetrics[instanceId][Metrics.CPU].getLatestValue();
       enrichedInstance[Metrics.DiskReadWriteOps] = perInstanceMetrics[instanceId][Metrics.DiskReadWriteOps].getLatestValue();
       enrichedInstance[Metrics.NetworkPacketsInOut] = perInstanceMetrics[instanceId][Metrics.NetworkPacketsInOut].getLatestValue();
+      enrichedInstance[Lifecycle.LastUtilizationDate] = instancesUtilization[instanceId].lastTimestamp((value) => value > 0);
+
       let totalUpTime = perInstanceMetrics[instanceId][Metrics.UpTime].getSum();
       let totalUtilizedTime = instancesUtilization[instanceId].getSum();
       enrichedInstance[Metrics.UpTime] = totalUpTime;

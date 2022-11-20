@@ -1,5 +1,6 @@
 import {CloudTrailClient, LookupEventsCommand} from '@aws-sdk/client-cloudtrail';
 import {AuditEvent, AuditEventTypes, Machine, OperatingSystems, States, Resource} from '../../models/metadata.js';
+import {printUpdate} from "../../utils/printingUtils.js";
 
 
 const EventNameToAuditEventType = {
@@ -90,6 +91,7 @@ const lookUpInstancesEvents = async function (regions) {
   let instancesEvents = {};
   let instancesInfo = {};
   for (let region of regions) {
+    printUpdate('Fetching instances events from CloudTrail API for region ' + region);
     const {
       instancesEvents: regionInstancesEvents,
       instancesInfo: regionInstancesInfo

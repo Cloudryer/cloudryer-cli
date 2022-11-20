@@ -21,6 +21,11 @@ describe('TimeSeries', () => {
   test('it should return count of values below threshold', () => {
     expect(timeSeries.countValuesLessThan(3)).toEqual(2);
   });
+
+  test('it should return the last timestamp meet the condition ', () => {
+    const timeSeries2 = new TimeSeries('test2',[3, 3, 3, 3, 5], [10, 20, 30, 40, 50]);
+    expect(timeSeries2.lastTimestamp((value) => value==3)).toEqual(40);
+  });
 });
 
 
