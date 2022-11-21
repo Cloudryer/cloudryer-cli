@@ -16,7 +16,7 @@
     "transform": {}
   },
   "dependencies": {
-    "@aws-sdk/client-cloudtrail": "^3.199.0",
+    "@aws-sdk/client-cloudtrail": "^3.200.0",
     "@aws-sdk/client-cloudwatch": "^3.198.0",
     "@aws-sdk/client-cost-explorer": "^3.198.0",
     "@aws-sdk/client-ec2": "^3.197.0",
