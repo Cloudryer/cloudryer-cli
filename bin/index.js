@@ -15,6 +15,7 @@ program.command('list-machines')
   // .option('-t, --show-tags', 'Show associated tags/labels for each machine')
   .option('-w, --calculate-waste', 'Calculate money waste over a period of time')
   .option('-p, --evaluation-period [number]', 'Set waste evaluation period in days', 90)
+  .option('-x, --export-to-csv <filename>', 'Export results to CSV file')
   .action(async (options) => {
 
     await listMachines(options);
