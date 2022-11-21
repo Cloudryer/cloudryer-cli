@@ -7,6 +7,7 @@ import {multiTimeSeriesScalarOperation, sumTwoTimeSeries} from '../utils/timeSer
 import {Machine, Waste, Metrics, Cost, Resource, Lifecycle, AuditEvent} from '../models/metadata.js';
 import {getInstanceCostPerHour} from '../vendors/aws/pricingCatalog.js';
 import {printUpdate} from '../utils/printingUtils.js';
+import * as CsvUtils from '../utils/csvUtils.js';
 
 const MILLIS_PER_DAY = 24 * 60 * 60 * 1000;
 
@@ -24,7 +25,7 @@ const utilizationThresholds = {
  * @param evaluationPeriod
  * @returns {Promise<(*&{"[Resource.CreationDate]": *, "[Resource.Creator]": (*|string), "[Waste.EvalPeriod]"})[]>}
  */
-const listMachines = async function ({hideUtilization, calculateWaste, evaluationPeriod}) {
+const listMachines = async function ({hideUtilization, calculateWaste, evaluationPeriod, exportToCsv}) {
 
   const enrichedMachinesData = await fetchAndEnrichMachineData({
     fetchUtilization: calculateWaste || !hideUtilization,
@@ -34,6 +35,10 @@ const listMachines = async function ({hideUtilization, calculateWaste, evaluatio
   printMachines(enrichedMachinesData, {hideUtilization, calculateWaste, evaluationPeriod});
   if (calculateWaste) {
     printSummary(enrichedMachinesData, {hideUtilization, calculateWaste, evaluationPeriod});
+  }
+
+  if (exportToCsv) {
+    CsvUtils.exportToCsv(enrichedMachinesData,exportToCsv);
   }
 
   return enrichedMachinesData;
