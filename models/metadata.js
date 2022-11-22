@@ -33,6 +33,8 @@ const Machine = {
   InstanceID: "InstanceID",
   InstanceType: "InstanceType",
   OperatingSystem: "OperatingSystem",
+  KeyName: "KeyName",
+
 }
 
 const OperatingSystems = {
