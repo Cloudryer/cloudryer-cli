@@ -45,6 +45,7 @@ const getEc2Instances = async function (regions) {
               [Machine.State]: STATES_MAPPING[instance.State.Name],
               [Resource.CreationDate]: new Date(instance.UsageOperationUpdateTime),
               [Machine.OperatingSystem]: !instance.Platform ? OperatingSystems.Linux : OperatingSystems.Windows,
+              [Machine.KeyName]: instance.KeyName,
               awsInfo: {
                 launchTime: instance.LaunchTime,
                 imageId: instance.ImageId,

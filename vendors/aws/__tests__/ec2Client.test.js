@@ -194,6 +194,7 @@ describe('getEc2Instances', () => {
           [Resource.CreationDate]: new Date('2022-11-07T18:26:28.000Z'),
           [Machine.OperatingSystem]: 'Linux',
           "firstTimeNetworkInterfacedAttached": new Date('2022-11-07T18:26:28.000Z'),
+          [Machine.KeyName]: 'cloudryer_sandbox',
           awsInfo: {
             "architecture": "x86_64",
             "description": undefined,
