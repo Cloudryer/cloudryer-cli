@@ -19,7 +19,7 @@
     "@aws-sdk/client-cloudtrail": "^3.199.0",
     "@aws-sdk/client-cloudwatch": "^3.198.0",
     "@aws-sdk/client-cost-explorer": "^3.198.0",
-    "@aws-sdk/client-ec2": "^3.197.0",
+    "@aws-sdk/client-ec2": "^3.201.0",
     "@aws-sdk/client-pricing": "^3.196.0",
     "commander": "^9.4.1",
     "console-table-printer": "^2.11.1",
